@@ -1,0 +1,8 @@
+# Papercraft Environment Configuration
+# Copy this file to .env and fill in your actual values
+
+# OpenAI API Configuration
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Application Configuration
+SPRING_PROFILES_ACTIVE=dev
