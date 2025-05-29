@@ -98,9 +98,8 @@ public class PaperGenerationService {
      */
     private Mono<PaperResult> generatePaperAsync(String taskId, PaperRequest request) {
         return Mono.fromCallable(() -> results.get(taskId))
-            .flatMap(result -> {
-                // 步驟1: 生成大綱 (PlannerAgent)
-                return generateOutline(request)
+            .flatMap(result -> {            // 步驟1: 生成大綱 (PlannerAgent)
+                return generateOutline(request, taskId)
                     .doOnNext(outline -> {
                         result.setOutline(outline);
                         result.setTitle(outline.getTitle());
@@ -108,7 +107,7 @@ public class PaperGenerationService {
                         results.put(taskId, result);
                     })
                     // 步驟2: 撰寫內容 (WriterAgent)
-                    .flatMap(this::writeContent)
+                    .flatMap(outline -> writeContent(outline, taskId))
                     .doOnNext(content -> {
                         result.setStatus(PaperResult.GenerationStatus.WRITING);
                         result.setSectionContents(content);
@@ -116,7 +115,7 @@ public class PaperGenerationService {
                         results.put(taskId, result);
                     })
                     // 步驟3: 編輯潤色 (EditorAgent)
-                    .flatMap(this::editContent)
+                    .flatMap(content -> editContent(content, taskId))
                     .doOnNext(finalContent -> {
                         result.setStatus(PaperResult.GenerationStatus.EDITING);
                         result.setProgress(90);
@@ -134,12 +133,13 @@ public class PaperGenerationService {
     }    /**
      * 使用 PlannerAgent 生成論文大綱
      */
-    private Mono<PaperOutline> generateOutline(PaperRequest request) {
+    private Mono<PaperOutline> generateOutline(PaperRequest request, String taskId) {
         return Mono.fromCallable(() -> {
             log.info("開始生成論文大綱: {}", request.getTopic());
             
-            // 為此任務創建唯一的對話 ID
-            String conversationId = "planner-" + UUID.randomUUID();
+            // 優化：使用任務級別的 conversationId，讓所有 Agent 可以共享基礎上下文
+            String taskConversationId = "task-" + taskId;
+            String plannerConversationId = taskConversationId + "-planner";
             
             String prompt = String.format("""
                 請為以下論文需求生成詳細大綱：
@@ -159,27 +159,44 @@ public class PaperGenerationService {
                 request.getRequirements() != null ? request.getRequirements() : "無"
             );
             
-            // 使用官方推薦的 .entity() 方法進行結構化輸出
+            // 先在任務級別記錄基礎需求，讓所有 Agent 都能看到
+            plannerAgent
+                .prompt()
+                .user("記錄任務需求：主題=" + request.getTopic() + ", 類型=" + request.getType() + ", 領域=" + request.getField() + ", 字數=" + request.getWordCount())
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, taskConversationId))
+                .call()
+                .content();
+            
+            // 然後在 Planner 專用記憶中進行詳細規劃
             return plannerAgent
                 .prompt()
                 .user(prompt)
-                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, plannerConversationId))
                 .call()
                 .entity(PaperOutline.class);
         });
     }/**
      * 使用 WriterAgent 撰寫論文內容
      */
-    private Mono<Map<String, String>> writeContent(PaperOutline outline) {
+    private Mono<Map<String, String>> writeContent(PaperOutline outline, String taskId) {
         return Mono.fromCallable(() -> {
             log.info("開始撰寫論文內容: {}", outline.getTitle());
             
-            // 為此任務創建唯一的對話 ID
-            String conversationId = "writer-" + UUID.randomUUID();
+            // 優化：Writer 可以看到任務基礎資訊 + 自己的專用記憶
+            String taskConversationId = "task-" + taskId;
+            String writerConversationId = taskConversationId + "-writer";
             
             Map<String, String> sectionContents = new HashMap<>();
             
-            // 為每個章節生成內容
+            // 先讓 Writer 了解任務背景（讀取任務級別記憶）
+            writerAgent
+                .prompt()
+                .user("我需要了解這個論文任務的背景和 Planner 的規劃，請簡單總結一下。")
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, taskConversationId))
+                .call()
+                .content();
+            
+            // 然後在專用記憶中進行寫作
             for (PaperOutline.Section section : outline.getSections()) {
                 String sectionPrompt = String.format("""
                     請為以下章節撰寫詳細內容：
@@ -198,11 +215,11 @@ public class PaperGenerationService {
                     section.getEstimatedWords(),
                     section.getSubsections() != null ? String.join(", ", section.getSubsections()) : "無"
                 );
-                
+
                 String content = writerAgent
                     .prompt()
                     .user(sectionPrompt)
-                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, writerConversationId))
                     .call()
                     .content();
                     
@@ -214,12 +231,21 @@ public class PaperGenerationService {
     }    /**
      * 使用 EditorAgent 編輯和潤色論文
      */
-    private Mono<String> editContent(Map<String, String> sectionContents) {
+    private Mono<String> editContent(Map<String, String> sectionContents, String taskId) {
         return Mono.fromCallable(() -> {
             log.info("開始編輯潤色論文");
             
-            // 為此任務創建唯一的對話 ID
-            String conversationId = "editor-" + UUID.randomUUID();
+            // 優化：Editor 也可以看到完整的任務上下文
+            String taskConversationId = "task-" + taskId;
+            String editorConversationId = taskConversationId + "-editor";
+            
+            // 先了解任務背景和前面 Agent 的工作
+            editorAgent
+                .prompt()
+                .user("我需要了解這篇論文的寫作背景和目標，請簡單總結一下。")
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, taskConversationId))
+                .call()
+                .content();
             
             // 將所有章節內容合併
             StringBuilder fullPaper = new StringBuilder();
@@ -239,7 +265,7 @@ public class PaperGenerationService {
             return editorAgent
                 .prompt()
                 .user(editPrompt)
-                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, editorConversationId))
                 .call()
                 .content();
         });

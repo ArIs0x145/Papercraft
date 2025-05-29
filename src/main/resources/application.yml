@@ -19,3 +19,6 @@ logging:
   level:
     io.github.aris0x145.papercraft: INFO
     org.springframework.ai: DEBUG
+    org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

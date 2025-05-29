@@ -2,12 +2,14 @@ package io.github.aris0x145.papercraft.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import java.util.List;
 
 /**
  * ChatClient 配置
@@ -23,9 +25,7 @@ public class ChatClientConfig {
     @Bean
     public ChatMemoryRepository chatMemoryRepository() {
         return new InMemoryChatMemoryRepository();
-    }
-
-    /**
+    }    /**
      * 共享的 ChatMemory 實例
      * 根據官方文檔，Spring AI 默認自動配置一個 ChatMemory bean
      * 我們這裡創建一個用於共享的實例
@@ -37,10 +37,20 @@ public class ChatClientConfig {
             .maxMessages(20)
             .build();
     }    /**
+     * 論文生成專用的日誌 Advisor
+     * 根據 Spring AI 官方文檔實現 SimpleLoggerAdvisor
+     * 自動記錄 AdvisedRequest 和 AdvisedResponse，包含 token 使用量
+     */
+    @Bean
+    public SimpleLoggerAdvisor paperGenerationLoggerAdvisor() {
+        return new SimpleLoggerAdvisor();
+    }
+    
+    /**
      * PlannerAgent 專用ChatClient - 負責分析需求並生成論文大綱
      */
     @Bean
-    public ChatClient plannerAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository) {
+    public ChatClient plannerAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository, SimpleLoggerAdvisor loggerAdvisor) {
         ChatMemory memory = MessageWindowChatMemory.builder()
             .chatMemoryRepository(chatMemoryRepository)
             .maxMessages(20)
@@ -55,13 +65,16 @@ public class ChatClientConfig {
                 
                 請以 JSON 格式回應，包含：title（標題）、abstractText（摘要）、keywords（關鍵詞列表）、sections（章節列表，每個章節包含 title、description、estimatedWords、subsections）
                 """)
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(memory).build())
+            .defaultAdvisors(List.of(
+                MessageChatMemoryAdvisor.builder(memory).build(),
+                loggerAdvisor
+            ))
             .build();
     }    /**
      * WriterAgent 專用ChatClient - 負責根據大綱撰寫論文內容
      */
     @Bean
-    public ChatClient writerAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository) {
+    public ChatClient writerAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository, SimpleLoggerAdvisor loggerAdvisor) {
         ChatMemory memory = MessageWindowChatMemory.builder()
             .chatMemoryRepository(chatMemoryRepository)
             .maxMessages(30)
@@ -76,13 +89,16 @@ public class ChatClientConfig {
                 
                 請撰寫清晰、專業的學術內容，適當使用專業術語。
                 """)
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(memory).build())
+            .defaultAdvisors(List.of(
+                MessageChatMemoryAdvisor.builder(memory).build(),
+                loggerAdvisor
+            ))
             .build();
     }    /**
      * EditorAgent 專用ChatClient - 負責編輯和潤色論文
      */
     @Bean
-    public ChatClient editorAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository) {
+    public ChatClient editorAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository, SimpleLoggerAdvisor loggerAdvisor) {
         ChatMemory memory = MessageWindowChatMemory.builder()
             .chatMemoryRepository(chatMemoryRepository)
             .maxMessages(15)
@@ -97,7 +113,10 @@ public class ChatClientConfig {
                 
                 請對論文進行專業的編輯和潤色，提高整體質量。
                 """)
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(memory).build())
+            .defaultAdvisors(List.of(
+                MessageChatMemoryAdvisor.builder(memory).build(),
+                loggerAdvisor
+            ))
             .build();
     }
 }
