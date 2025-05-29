@@ -159,6 +159,7 @@ public class PaperGenerationService {
                 request.getRequirements() != null ? request.getRequirements() : "無"
             );
             
+            // 使用官方推薦的 .entity() 方法進行結構化輸出
             return plannerAgent
                 .prompt()
                 .user(prompt)
@@ -166,7 +167,7 @@ public class PaperGenerationService {
                 .call()
                 .entity(PaperOutline.class);
         });
-    }    /**
+    }/**
      * 使用 WriterAgent 撰寫論文內容
      */
     private Mono<Map<String, String>> writeContent(PaperOutline outline) {

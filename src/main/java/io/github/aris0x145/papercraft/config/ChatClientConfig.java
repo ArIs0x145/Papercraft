@@ -36,15 +36,13 @@ public class ChatClientConfig {
             .chatMemoryRepository(chatMemoryRepository)
             .maxMessages(20)
             .build();
-    }
-
-    /**
+    }    /**
      * PlannerAgent 專用ChatClient - 負責分析需求並生成論文大綱
      */
     @Bean
-    public ChatClient plannerAgent(ChatClient.Builder builder) {
+    public ChatClient plannerAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository) {
         ChatMemory memory = MessageWindowChatMemory.builder()
-            .chatMemoryRepository(new InMemoryChatMemoryRepository())
+            .chatMemoryRepository(chatMemoryRepository)
             .maxMessages(20)
             .build();
             
@@ -59,15 +57,13 @@ public class ChatClientConfig {
                 """)
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(memory).build())
             .build();
-    }
-
-    /**
+    }    /**
      * WriterAgent 專用ChatClient - 負責根據大綱撰寫論文內容
      */
     @Bean
-    public ChatClient writerAgent(ChatClient.Builder builder) {
+    public ChatClient writerAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository) {
         ChatMemory memory = MessageWindowChatMemory.builder()
-            .chatMemoryRepository(new InMemoryChatMemoryRepository())
+            .chatMemoryRepository(chatMemoryRepository)
             .maxMessages(30)
             .build();
             
@@ -82,15 +78,13 @@ public class ChatClientConfig {
                 """)
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(memory).build())
             .build();
-    }
-
-    /**
+    }    /**
      * EditorAgent 專用ChatClient - 負責編輯和潤色論文
      */
     @Bean
-    public ChatClient editorAgent(ChatClient.Builder builder) {
+    public ChatClient editorAgent(ChatClient.Builder builder, ChatMemoryRepository chatMemoryRepository) {
         ChatMemory memory = MessageWindowChatMemory.builder()
-            .chatMemoryRepository(new InMemoryChatMemoryRepository())
+            .chatMemoryRepository(chatMemoryRepository)
             .maxMessages(15)
             .build();
             
