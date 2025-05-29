@@ -1,20 +1,18 @@
-# Spring AI Configuration
 spring:
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY:your-api-key-here}
+      api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: gpt-4
+          model: gpt-4o
           temperature: 0.7
-          max-tokens: 2000
+          max-completion-tokens: 2048
+          top-p: 0.9
+          frequency-penalty: 0.0
+          presence-penalty: 0.0
 
-# Server Configuration
-server:
-  port: 8080
-
-# Logging Configuration
+# 日誌配置
 logging:
   level:
+    io.github.aris0x145.papercraft: INFO
     org.springframework.ai: DEBUG
-    io.github.aris0x145.papercraft: DEBUG

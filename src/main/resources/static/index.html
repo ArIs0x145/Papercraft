@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Papercraft - AI 論文生成系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], 
+        input[type="number"], 
+        select, 
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, 
+        select:focus, 
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e1e5e9;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .status {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .paper-content {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Papercraft</h1>
+            <p>基於 Spring AI 的智能論文生成系統</p>
+        </div>
+        
+        <div class="content">
+            <form id="paperForm">
+                <div class="form-group">
+                    <label for="topic">論文主題 *</label>
+                    <input type="text" id="topic" name="topic" required 
+                           placeholder="例如：人工智能在教育領域的應用">
+                </div>
+                
+                <div class="form-group">
+                    <label for="type">論文類型</label>
+                    <select id="type" name="type">
+                        <option value="research">研究論文</option>
+                        <option value="review">綜述論文</option>
+                        <option value="survey">調查報告</option>
+                        <option value="case_study">案例研究</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="field">學術領域</label>
+                    <input type="text" id="field" name="field" 
+                           placeholder="例如：計算機科學、教育學、心理學">
+                </div>
+                
+                <div class="form-group">
+                    <label for="wordCount">目標字數</label>
+                    <input type="number" id="wordCount" name="wordCount" 
+                           value="3000" min="1000" max="10000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="requirements">特殊要求</label>
+                    <textarea id="requirements" name="requirements" 
+                              placeholder="例如：需要包含實驗數據分析、參考文獻格式要求等"></textarea>
+                </div>
+                
+                <button type="submit" class="btn" id="generateBtn">
+                    🚀 開始生成論文
+                </button>
+            </form>
+            
+            <div id="resultSection" class="result-section">
+                <h3>生成進度</h3>
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar">0%</div>
+                </div>
+                <div class="status" id="status">準備中...</div>
+                <div id="errorMessage" class="error" style="display: none;"></div>
+                <div id="paperContent" class="paper-content" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let progressInterval = null;
+
+        document.getElementById('paperForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const request = {
+                topic: formData.get('topic'),
+                type: formData.get('type'),
+                field: formData.get('field'),
+                wordCount: parseInt(formData.get('wordCount')),
+                requirements: formData.get('requirements')
+            };
+            
+            try {
+                document.getElementById('generateBtn').disabled = true;
+                document.getElementById('generateBtn').textContent = '生成中...';
+                document.getElementById('resultSection').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+                document.getElementById('paperContent').style.display = 'none';
+                
+                const response = await fetch('/api/papers/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(request)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('生成請求失敗');
+                }
+                
+                const result = await response.json();
+                currentTaskId = result.taskId;
+                
+                // 開始輪詢進度
+                startProgressPolling();
+                
+            } catch (error) {
+                showError('生成論文時發生錯誤: ' + error.message);
+                resetForm();
+            }
+        });
+
+        function startProgressPolling() {
+            progressInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/papers/progress/${currentTaskId}`);
+                    if (!response.ok) {
+                        throw new Error('查詢進度失敗');
+                    }
+                    
+                    const result = await response.json();
+                    updateProgress(result);
+                    
+                    if (result.status === 'COMPLETED') {
+                        clearInterval(progressInterval);
+                        showResult(result);
+                        resetForm();
+                    } else if (result.status === 'FAILED') {
+                        clearInterval(progressInterval);
+                        showError(result.errorMessage || '生成失敗');
+                        resetForm();
+                    }
+                } catch (error) {
+                    console.error('查詢進度錯誤:', error);
+                }
+            }, 2000); // 每2秒查詢一次
+        }
+
+        function updateProgress(result) {
+            const progressBar = document.getElementById('progressBar');
+            const status = document.getElementById('status');
+            
+            progressBar.style.width = result.progress + '%';
+            progressBar.textContent = result.progress + '%';
+            
+            const statusText = {
+                'PLANNING': '📋 正在規劃大綱...',
+                'WRITING': '✍️ 正在撰寫內容...',
+                'EDITING': '✏️ 正在編輯潤色...',
+                'COMPLETED': '✅ 生成完成！',
+                'FAILED': '❌ 生成失敗'
+            };
+            
+            status.textContent = statusText[result.status] || '處理中...';
+            
+            // 如果是演示模式，顯示相應提示
+            if (result.title && result.title.includes('模擬論文')) {
+                status.textContent += ' (演示模式)';
+            }
+        }
+
+        function showResult(result) {
+            const paperContent = document.getElementById('paperContent');
+            paperContent.textContent = result.content;
+            paperContent.style.display = 'block';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function resetForm() {
+            document.getElementById('generateBtn').disabled = false;
+            document.getElementById('generateBtn').textContent = '🚀 開始生成論文';
+        }
+    </script>
+</body>
+</html>
