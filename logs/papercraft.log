@@ -21,3 +21,39 @@
 2025-05-30 17:42:09.083 [http-nio-8080-exec-4] INFO  i.g.a.p.controller.PaperGenerationController - 查詢生成進度: 60cd0f26-5b4e-4900-b36c-80532ac85c19
 2025-05-30 18:08:52.777 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
 2025-05-30 18:08:52.781 [tomcat-shutdown] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-05-30 18:55:30.544 [main] INFO  i.g.aris0x145.papercraft.PapercraftApplication - Starting PapercraftApplication using Java 21.0.3 with PID 7332 (S:\Papercraft\target\classes started by chenb in S:\Papercraft)
+2025-05-30 18:55:30.545 [main] INFO  i.g.aris0x145.papercraft.PapercraftApplication - No active profile set, falling back to 1 default profile: "default"
+2025-05-30 18:55:31.206 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-05-30 18:55:31.216 [main] INFO  org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-05-30 18:55:31.217 [main] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-05-30 18:55:31.217 [main] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.41]
+2025-05-30 18:55:31.253 [main] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-05-30 18:55:31.253 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 679 ms
+2025-05-30 18:55:31.736 [main] INFO  o.s.b.a.web.servlet.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2025-05-30 18:55:31.945 [main] INFO  org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-05-30 18:55:31.951 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-05-30 18:55:31.955 [main] INFO  i.g.aris0x145.papercraft.PapercraftApplication - Started PapercraftApplication in 1.828 seconds (process running for 2.85)
+2025-05-30 18:55:40.616 [http-nio-8080-exec-1] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-05-30 18:55:40.617 [http-nio-8080-exec-1] INFO  org.springframework.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-05-30 18:55:40.617 [http-nio-8080-exec-1] INFO  org.springframework.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2025-05-30 18:55:52.663 [http-nio-8080-exec-2] INFO  i.g.a.p.controller.PaperGenerationController - 接收到純文本流式論文生成請求: valrant
+2025-05-30 18:57:16.205 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-05-30 18:57:16.210 [tomcat-shutdown] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2025-05-30 19:00:24.964 [main] INFO  i.g.aris0x145.papercraft.PapercraftApplication - Starting PapercraftApplication using Java 21.0.3 with PID 21052 (S:\Papercraft\target\classes started by chenb in S:\Papercraft)
+2025-05-30 19:00:24.965 [main] INFO  i.g.aris0x145.papercraft.PapercraftApplication - No active profile set, falling back to 1 default profile: "default"
+2025-05-30 19:00:25.618 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-05-30 19:00:25.627 [main] INFO  org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-05-30 19:00:25.628 [main] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2025-05-30 19:00:25.628 [main] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.41]
+2025-05-30 19:00:25.660 [main] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-05-30 19:00:25.661 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 665 ms
+2025-05-30 19:00:26.064 [main] INFO  o.s.b.a.web.servlet.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2025-05-30 19:00:26.262 [main] INFO  org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-05-30 19:00:26.268 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2025-05-30 19:00:26.273 [main] INFO  i.g.aris0x145.papercraft.PapercraftApplication - Started PapercraftApplication in 1.677 seconds (process running for 2.084)
+2025-05-30 19:00:48.156 [http-nio-8080-exec-1] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-05-30 19:00:48.156 [http-nio-8080-exec-1] INFO  org.springframework.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-05-30 19:00:48.156 [http-nio-8080-exec-1] INFO  org.springframework.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2025-05-30 19:00:48.217 [http-nio-8080-exec-1] INFO  i.g.a.p.controller.PaperGenerationController - 接收到純文本流式論文生成請求: valrant
+2025-05-30 19:02:19.602 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-05-30 19:02:19.642 [tomcat-shutdown] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
