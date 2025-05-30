@@ -107,35 +107,12 @@
             background: #ccc;
             cursor: not-allowed;
             transform: none;
-        }
-
-        .result-section {
+        }        .result-section {
             margin-top: 30px;
             padding: 20px;
             background: #f8f9fa;
             border-radius: 12px;
             display: none;
-        }
-
-        .progress {
-            width: 100%;
-            height: 20px;
-            background: #e1e5e9;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            width: 0%;
-            transition: width 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
         }
 
         .status {
@@ -150,7 +127,7 @@
             padding: 15px;
             border-radius: 8px;
             margin: 15px 0;
-        }        .paper-content {
+        }.paper-content {
             background: white;
             border: 1px solid #e1e5e9;
             border-radius: 8px;
@@ -241,76 +218,20 @@
                     <label for="requirements">特殊要求</label>
                     <textarea id="requirements" name="requirements" 
                               placeholder="例如：需要包含實驗數據分析、參考文獻格式要求等"></textarea>
-                </div>
-                  <button type="submit" class="btn" id="generateBtn">
-                    🚀 開始生成論文
-                </button>
-                
-                <button type="button" class="btn" id="streamBtn" style="margin-top: 10px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                    ⚡ 流式生成論文 (即時顯示)
+                </div>                <button type="button" class="btn" id="streamBtn">
+                    ⚡ 流式生成論文
                 </button>
             </form>
-            
+
             <div id="resultSection" class="result-section">
-                <h3>生成進度</h3>
-                <div class="progress">
-                    <div class="progress-bar" id="progressBar">0%</div>
-                </div>                <div class="status" id="status">準備中...</div>
+                <h3>論文生成結果</h3>
                 <div class="stream-indicator" id="streamIndicator">🔄 正在流式生成</div>
+                <div class="status" id="status">準備中...</div>
                 <div id="errorMessage" class="error" style="display: none;"></div>
-                <div id="paperContent" class="paper-content" style="display: none;"></div>
                 <div id="streamContent" class="stream-content" style="display: none;"></div>
             </div>
         </div>
     </div>    <script>
-        let currentTaskId = null;
-        let progressInterval = null;
-
-        document.getElementById('paperForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const request = {
-                topic: formData.get('topic'),
-                type: formData.get('type'),
-                field: formData.get('field'),
-                wordCount: parseInt(formData.get('wordCount')),
-                requirements: formData.get('requirements')
-            };
-            
-            try {
-                document.getElementById('generateBtn').disabled = true;
-                document.getElementById('generateBtn').textContent = '生成中...';
-                document.getElementById('resultSection').style.display = 'block';
-                document.getElementById('errorMessage').style.display = 'none';
-                document.getElementById('paperContent').style.display = 'none';
-                document.getElementById('streamContent').style.display = 'none';
-                document.getElementById('streamIndicator').style.display = 'none';
-                
-                const response = await fetch('/api/papers/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(request)
-                });
-                
-                if (!response.ok) {
-                    throw new Error('生成請求失敗');
-                }
-                
-                const result = await response.json();
-                currentTaskId = result.taskId;
-                
-                // 開始輪詢進度
-                startProgressPolling();
-                
-            } catch (error) {
-                showError('生成論文時發生錯誤: ' + error.message);
-                resetForm();
-            }
-        });
-
         // 流式生成按鈕事件
         document.getElementById('streamBtn').addEventListener('click', async function() {
             const formData = new FormData(document.getElementById('paperForm'));
@@ -328,12 +249,10 @@
             }
 
             try {
-                document.getElementById('generateBtn').disabled = true;
                 document.getElementById('streamBtn').disabled = true;
                 document.getElementById('streamBtn').textContent = '流式生成中...';
                 document.getElementById('resultSection').style.display = 'block';
                 document.getElementById('errorMessage').style.display = 'none';
-                document.getElementById('paperContent').style.display = 'none';
                 document.getElementById('streamContent').style.display = 'block';
                 document.getElementById('streamIndicator').style.display = 'block';
                 document.getElementById('status').textContent = '🚀 開始流式生成...';
@@ -342,18 +261,18 @@
                 const streamDiv = document.getElementById('streamContent');
                 streamDiv.textContent = '';
 
-                // 使用 Server-Sent Events 進行流式接收
+                // 使用流式請求進行接收
                 await startStreamGeneration(request, streamDiv);
 
             } catch (error) {
                 showError('流式生成論文時發生錯誤: ' + error.message);
-                resetStreamForm();
+                resetForm();
             }
         });
 
         async function startStreamGeneration(request, streamDiv) {
             try {
-                const response = await fetch('/api/papers/generate/stream-text', {
+                const response = await fetch('/api/papers/generate/stream', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -374,7 +293,7 @@
                     if (done) {
                         document.getElementById('streamIndicator').style.display = 'none';
                         document.getElementById('status').textContent = '✅ 流式生成完成！';
-                        resetStreamForm();
+                        resetForm();
                         break;
                     }
 
@@ -387,61 +306,6 @@
             }
         }
 
-        function startProgressPolling() {
-            progressInterval = setInterval(async () => {
-                try {
-                    const response = await fetch(`/api/papers/progress/${currentTaskId}`);
-                    if (!response.ok) {
-                        throw new Error('查詢進度失敗');
-                    }
-                    
-                    const result = await response.json();
-                    updateProgress(result);
-                    
-                    if (result.status === 'COMPLETED') {
-                        clearInterval(progressInterval);
-                        showResult(result);
-                        resetForm();
-                    } else if (result.status === 'FAILED') {
-                        clearInterval(progressInterval);
-                        showError(result.errorMessage || '生成失敗');
-                        resetForm();
-                    }
-                } catch (error) {
-                    console.error('查詢進度錯誤:', error);
-                }
-            }, 2000); // 每2秒查詢一次
-        }
-
-        function updateProgress(result) {
-            const progressBar = document.getElementById('progressBar');
-            const status = document.getElementById('status');
-            
-            progressBar.style.width = result.progress + '%';
-            progressBar.textContent = result.progress + '%';
-            
-            const statusText = {
-                'PLANNING': '📋 正在規劃大綱...',
-                'WRITING': '✍️ 正在撰寫內容...',
-                'EDITING': '✏️ 正在編輯潤色...',
-                'COMPLETED': '✅ 生成完成！',
-                'FAILED': '❌ 生成失敗'
-            };
-            
-            status.textContent = statusText[result.status] || '處理中...';
-            
-            // 如果是演示模式，顯示相應提示
-            if (result.title && result.title.includes('模擬論文')) {
-                status.textContent += ' (演示模式)';
-            }
-        }
-
-        function showResult(result) {
-            const paperContent = document.getElementById('paperContent');
-            paperContent.textContent = result.content;
-            paperContent.style.display = 'block';
-        }
-
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
@@ -449,16 +313,8 @@
         }
 
         function resetForm() {
-            document.getElementById('generateBtn').disabled = false;
-            document.getElementById('generateBtn').textContent = '🚀 開始生成論文';
             document.getElementById('streamBtn').disabled = false;
-            document.getElementById('streamBtn').textContent = '⚡ 流式生成論文 (即時顯示)';
-        }
-
-        function resetStreamForm() {
-            document.getElementById('generateBtn').disabled = false;
-            document.getElementById('streamBtn').disabled = false;
-            document.getElementById('streamBtn').textContent = '⚡ 流式生成論文 (即時顯示)';
+            document.getElementById('streamBtn').textContent = '⚡ 流式生成論文';
         }
     </script>
 </body>
