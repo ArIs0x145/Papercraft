@@ -3,7 +3,6 @@ package io.github.aris0x145.papercraft.service;
 import io.github.aris0x145.papercraft.model.PaperRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -11,7 +10,8 @@ import reactor.core.publisher.Flux;
 import java.util.UUID;
 
 /**
- * 論文生成服務 - 基於 Spring AI 的多 Agent 協同工作
+ * 論文生成服務 - 基於 Spring AI 標準方式的多 Agent 協同工作
+ * 使用 CONVERSATION_ID 參數控制記憶體共享，完全遵循 Spring AI 最佳實踐
  */
 @Slf4j
 @Service
@@ -20,58 +20,54 @@ public class PaperGenerationService {
     private final ChatClient plannerAgent;
     private final ChatClient writerAgent;
     private final ChatClient editorAgent;
-    
+
     /**
-     * 手動構造函數 - 解決 Lombok @RequiredArgsConstructor 不複製 @Qualifier 注解的問題
+     * 構造函數 - 注入三個 Agent 的 ChatClient
+     * 每個 Agent 都已經配置了 MessageChatMemoryAdvisor，支援記憶體共享
      */
     public PaperGenerationService(
-            @Qualifier("plannerAgent") ChatClient plannerAgent,
-            @Qualifier("writerAgent") ChatClient writerAgent,
-            @Qualifier("editorAgent") ChatClient editorAgent) {        this.plannerAgent = plannerAgent;
+            @Qualifier("plannerAgentChatClient") ChatClient plannerAgent,
+            @Qualifier("writerAgentChatClient") ChatClient writerAgent,
+            @Qualifier("editorAgentChatClient") ChatClient editorAgent) {
+        this.plannerAgent = plannerAgent;
         this.writerAgent = writerAgent;
         this.editorAgent = editorAgent;
     }
 
     /**
      * 流式生成論文（即時流式響應）
+     * 使用 CONVERSATION_ID 參數實現多 Agent 間的記憶體共享
      */
     public Flux<String> generatePaperStream(PaperRequest request) {
-        String taskId = UUID.randomUUID().toString();
+        String conversationId = "paper-" + UUID.randomUUID().toString();
+        log.info("Starting paper generation with conversationId: {}", conversationId);
         
         return Flux.concat(
             // 步驟1: 生成大綱
             Flux.just("=== 開始生成論文大綱 ===\n\n")
-                .concatWith(generateOutlineStream(request, taskId))
+                .concatWith(generateOutlineStream(request, conversationId))
                 .concatWith(Flux.just("\n\n=== 大綱生成完成 ===\n\n")),
             
             // 步驟2: 撰寫內容  
             Flux.just("=== 開始撰寫論文內容 ===\n\n")
-                .concatWith(writeContentStream(request, taskId))
+                .concatWith(writeContentStream(request, conversationId))
                 .concatWith(Flux.just("\n\n=== 內容撰寫完成 ===\n\n")),
             
             // 步驟3: 編輯潤色
             Flux.just("=== 開始編輯潤色 ===\n\n")
-                .concatWith(editContentStream(request, taskId))
+                .concatWith(editContentStream(request, conversationId))
                 .concatWith(Flux.just("\n\n=== 論文生成完成 ===\n\n"))
-        );
-    }/**
+        )
+        .doOnTerminate(() -> {
+            log.info("Paper generation completed for conversationId: {}", conversationId);
+        });
+    }
+
+    /**
      * 流式生成大綱
+     * 使用 CONVERSATION_ID 參數控制記憶體
      */
-    private Flux<String> generateOutlineStream(PaperRequest request, String taskId) {
-        String taskConversationId = "task-" + taskId;
-        String plannerConversationId = taskConversationId + "-planner";
-        
-        // 先在任務級別記錄基礎需求，讓所有 Agent 都能看到
-        plannerAgent
-            .prompt()
-            .user("記錄任務需求：主題=" + request.getTopic() + ", 類型=" + request.getType() + ", 領域=" + request.getField() + ", 字數=" + request.getWordCount())
-            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, taskConversationId))
-            .stream()
-            .content()
-            .collectList()
-            .map(chunks -> String.join("", chunks))
-            .block(); // 同步執行以確保基礎上下文先建立
-        
+    private Flux<String> generateOutlineStream(PaperRequest request, String conversationId) {
         String prompt = String.format("""
             請為以下論文需求生成詳細大綱：
             
@@ -93,27 +89,16 @@ public class PaperGenerationService {
         return plannerAgent
             .prompt()
             .user(prompt)
-            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, plannerConversationId))
+            .advisors(advisorSpec -> advisorSpec.param("CONVERSATION_ID", conversationId))
             .stream()
             .content();
-    }    /**
+    }
+
+    /**
      * 流式撰寫內容
+     * 使用相同的 CONVERSATION_ID，Writer 可以看到 Planner 的工作結果
      */
-    private Flux<String> writeContentStream(PaperRequest request, String taskId) {
-        String taskConversationId = "task-" + taskId;
-        String writerConversationId = taskConversationId + "-writer";
-        
-        // 先讓 Writer 了解任務背景（讀取任務級別記憶）
-        writerAgent
-            .prompt()
-            .user("我需要了解這個論文任務的背景和 Planner 的規劃，請簡單總結一下。")
-            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, taskConversationId))
-            .stream()
-            .content()
-            .collectList()
-            .map(chunks -> String.join("", chunks))
-            .block(); // 同步執行以確保能看到前面的上下文
-        
+    private Flux<String> writeContentStream(PaperRequest request, String conversationId) {
         String prompt = String.format("""
             請為論文主題"%s"撰寫詳細的學術內容。
             
@@ -134,27 +119,16 @@ public class PaperGenerationService {
         return writerAgent
             .prompt()
             .user(prompt)
-            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, writerConversationId))
+            .advisors(advisorSpec -> advisorSpec.param("CONVERSATION_ID", conversationId))
             .stream()
             .content();
-    }    /**
+    }
+
+    /**
      * 流式編輯潤色
+     * 使用相同的 CONVERSATION_ID，Editor 可以看到 Planner 和 Writer 的所有工作結果
      */
-    private Flux<String> editContentStream(PaperRequest request, String taskId) {
-        String taskConversationId = "task-" + taskId;
-        String editorConversationId = taskConversationId + "-editor";
-        
-        // 先了解任務背景和前面 Agent 的工作
-        editorAgent
-            .prompt()
-            .user("我需要了解這篇論文的寫作背景和目標，以及前面 Planner 和 Writer 的工作成果，請簡單總結一下。")
-            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, taskConversationId))
-            .stream()
-            .content()
-            .collectList()
-            .map(chunks -> String.join("", chunks))
-            .block(); // 同步執行以確保能看到前面的所有上下文
-        
+    private Flux<String> editContentStream(PaperRequest request, String conversationId) {
         String prompt = String.format("""
             請對前面生成的論文進行專業編輯和潤色：
             
@@ -173,7 +147,7 @@ public class PaperGenerationService {
         return editorAgent
             .prompt()
             .user(prompt)
-            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, editorConversationId))
+            .advisors(advisorSpec -> advisorSpec.param("CONVERSATION_ID", conversationId))
             .stream()
             .content();
     }
