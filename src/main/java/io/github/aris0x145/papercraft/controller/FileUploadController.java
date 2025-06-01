@@ -89,7 +89,7 @@ public class FileUploadController {
             
             // 3. 提取文件內容
             List<String> fileContents = processingResult.getProcessedFiles().stream()
-                .map(fileInfo -> fileInfo.getContent())
+                .map(FileProcessingResult.ProcessedFile::getContent)
                 .toList();
             
             // 4. 使用增強的 PaperGenerationService 生成論文

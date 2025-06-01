@@ -302,15 +302,14 @@
                     <label for="requirements">特殊要求</label>
                     <textarea id="requirements" name="requirements" 
                               placeholder="例如：需要包含實驗數據分析、參考文獻格式要求等"></textarea>
+                </div>                <button type="button" class="btn" id="generateBtn">
+                    <span id="btnIcon">🚀</span>
+                    <span id="btnText">生成論文</span>
+                </button>
+                
+                <div class="generation-mode" id="generationMode" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 14px; color: #666; display: none;">
+                    <span id="modeText"></span>
                 </div>
-
-                <button type="button" class="btn" id="streamBtn">
-                    ⚡ 流式生成論文
-                </button>
-
-                <button type="button" class="btn btn-success" id="fileGenerateBtn">
-                    📄 基於文件生成論文
-                </button>
             </form>
 
             <div id="resultSection" class="result-section">
@@ -322,16 +321,68 @@
                 <div id="streamContent" class="stream-content" style="display: none;"></div>
             </div>
         </div>
-    </div>
-
-    <script>
+    </div>    <script>
         let selectedFiles = [];
+          // 頁面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化生成模式顯示
+            updateGenerationMode();
+            
+            // 設置統一的論文生成按鈕事件（智能檢測模式）
+            document.getElementById('generateBtn').addEventListener('click', async function() {
+                const formData = new FormData(document.getElementById('paperForm'));
+                const request = {
+                    topic: formData.get('topic'),
+                    type: formData.get('type'),
+                    field: formData.get('field'),
+                    wordCount: parseInt(formData.get('wordCount')),
+                    requirements: formData.get('requirements')
+                };
+
+                if (!request.topic) {
+                    showError('請先填寫論文主題');
+                    return;
+                }
+
+                // 智能檢測：有文件則基於文件生成，無文件則流式生成
+                if (selectedFiles.length > 0) {
+                    await generateFromFiles(request);
+                } else {
+                    await generateFromStream(request);
+                }
+            });
+        });
 
         // 文件選擇事件
         document.getElementById('fileUpload').addEventListener('change', function(e) {
             selectedFiles = Array.from(e.target.files);
             updateFileList();
-        });
+            updateGenerationMode(); // 更新生成模式顯示
+        });// 更新生成模式顯示
+        function updateGenerationMode() {
+            const modeDiv = document.getElementById('generationMode');
+            const modeText = document.getElementById('modeText');
+            const btnIcon = document.getElementById('btnIcon');
+            const btnText = document.getElementById('btnText');
+            
+            // 防護措施：確保所有元素都存在
+            if (!modeDiv || !modeText || !btnIcon || !btnText) {
+                console.warn('updateGenerationMode: 某些 DOM 元素未找到');
+                return;
+            }
+            
+            if (selectedFiles.length > 0) {
+                modeDiv.style.display = 'block';
+                modeText.textContent = `📄 將基於 ${selectedFiles.length} 個上傳文件生成論文`;
+                btnIcon.textContent = '📄';
+                btnText.textContent = '基於文件生成論文';
+            } else {
+                modeDiv.style.display = 'block';
+                modeText.textContent = '⚡ 將使用流式生成模式（僅基於您的輸入）';
+                btnIcon.textContent = '⚡';
+                btnText.textContent = '流式生成論文';
+            }
+        }
 
         // 更新文件列表顯示
         function updateFileList() {
@@ -366,73 +417,15 @@
             const k = 1024;
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];        }
 
-        // 普通流式生成按鈕事件
-        document.getElementById('streamBtn').addEventListener('click', async function() {
-            const formData = new FormData(document.getElementById('paperForm'));
-            const request = {
-                topic: formData.get('topic'),
-                type: formData.get('type'),
-                field: formData.get('field'),
-                wordCount: parseInt(formData.get('wordCount')),
-                requirements: formData.get('requirements')
-            };
-
-            if (!request.topic) {
-                showError('請先填寫論文主題');
-                return;
-            }
-
+        // 基於文件生成論文
+        async function generateFromFiles(request) {
             try {
-                document.getElementById('streamBtn').disabled = true;
-                document.getElementById('fileGenerateBtn').disabled = true;
-                document.getElementById('streamBtn').textContent = '流式生成中...';
-                document.getElementById('resultSection').style.display = 'block';
-                hideMessages();
-                document.getElementById('streamContent').style.display = 'block';
-                document.getElementById('streamIndicator').style.display = 'block';
-                document.getElementById('status').textContent = '🚀 開始流式生成...';
+                const generateBtn = document.getElementById('generateBtn');
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<span>📁</span><span>處理文件中...</span>';
                 
-                // 清空之前的內容
-                const streamDiv = document.getElementById('streamContent');
-                streamDiv.textContent = '';
-
-                // 使用流式請求進行接收
-                await startStreamGeneration('/api/papers/generate/stream', request, streamDiv);
-
-            } catch (error) {
-                showError('流式生成論文時發生錯誤: ' + error.message);
-                resetForm();
-            }
-        });
-
-        // 基於文件生成按鈕事件
-        document.getElementById('fileGenerateBtn').addEventListener('click', async function() {
-            const formData = new FormData(document.getElementById('paperForm'));
-            const request = {
-                topic: formData.get('topic'),
-                type: formData.get('type'),
-                field: formData.get('field'),
-                wordCount: parseInt(formData.get('wordCount')),
-                requirements: formData.get('requirements')
-            };
-
-            if (!request.topic) {
-                showError('請先填寫論文主題');
-                return;
-            }
-
-            if (selectedFiles.length === 0) {
-                showError('請先上傳至少一個參考文件');
-                return;
-            }
-
-            try {
-                document.getElementById('streamBtn').disabled = true;
-                document.getElementById('fileGenerateBtn').disabled = true;
-                document.getElementById('fileGenerateBtn').textContent = '處理文件中...';
                 document.getElementById('resultSection').style.display = 'block';
                 hideMessages();
                 document.getElementById('status').textContent = '📁 正在處理文件...';
@@ -456,7 +449,7 @@
                 showSuccess(`成功處理 ${uploadResult.processedFiles.length} 個文件，生成 ${uploadResult.totalDocuments} 個文檔片段`);
 
                 // 步驟2: 基於文件內容生成論文
-                document.getElementById('fileGenerateBtn').textContent = '生成論文中...';
+                generateBtn.innerHTML = '<span>🚀</span><span>生成論文中...</span>';
                 document.getElementById('streamContent').style.display = 'block';
                 document.getElementById('streamIndicator').style.display = 'block';
                 document.getElementById('status').textContent = '🚀 基於文件內容生成論文...';
@@ -480,7 +473,33 @@
                 showError('基於文件生成論文時發生錯誤: ' + error.message);
                 resetForm();
             }
-        });
+        }
+
+        // 流式生成論文
+        async function generateFromStream(request) {
+            try {
+                const generateBtn = document.getElementById('generateBtn');
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<span>⚡</span><span>流式生成中...</span>';
+                
+                document.getElementById('resultSection').style.display = 'block';
+                hideMessages();
+                document.getElementById('streamContent').style.display = 'block';
+                document.getElementById('streamIndicator').style.display = 'block';
+                document.getElementById('status').textContent = '🚀 開始流式生成...';
+                
+                // 清空之前的內容
+                const streamDiv = document.getElementById('streamContent');
+                streamDiv.textContent = '';
+
+                // 使用流式請求進行接收
+                await startStreamGeneration('/api/papers/generate/stream', request, streamDiv);
+
+            } catch (error) {
+                showError('流式生成論文時發生錯誤: ' + error.message);
+                resetForm();
+            }
+        }
 
         async function startStreamGeneration(url, request, streamDiv) {
             try {
@@ -556,13 +575,14 @@
         function hideMessages() {
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('successMessage').style.display = 'none';
-        }
-
-        function resetForm() {
-            document.getElementById('streamBtn').disabled = false;
-            document.getElementById('fileGenerateBtn').disabled = false;
-            document.getElementById('streamBtn').textContent = '⚡ 流式生成論文';
-            document.getElementById('fileGenerateBtn').textContent = '📄 基於文件生成論文';
+        }        function resetForm() {
+            const generateBtn = document.getElementById('generateBtn');
+            if (generateBtn) {
+                generateBtn.disabled = false;
+            }
+            
+            // 根據當前模式重置按鈕內容
+            updateGenerationMode();
         }
     </script>
 </body>
