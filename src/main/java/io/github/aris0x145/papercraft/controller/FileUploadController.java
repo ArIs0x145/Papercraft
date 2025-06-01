@@ -59,14 +59,13 @@ public class FileUploadController {
         }
     }    /**
      * 基於上傳文件生成報告（流式）
-     */
-    @PostMapping(value = "/generate-report", produces = MediaType.TEXT_PLAIN_VALUE)
+     */    @PostMapping(value = "/generate-report", produces = MediaType.TEXT_PLAIN_VALUE)
     public Flux<String> generateReportFromFiles(
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam("topic") String topic,
-            @RequestParam(value = "type", defaultValue = "research") String type,
+            @RequestParam(value = "type", defaultValue = "研究論文") String type,
             @RequestParam(value = "field", required = false) String field,
-            @RequestParam(value = "wordCount", defaultValue = "3000") Integer wordCount,
+            @RequestParam(value = "language", defaultValue = "繁體中文") String language,
             @RequestParam(value = "requirements", required = false) String requirements) {
         
         log.info("開始基於 {} 個文件生成論文: {}", files.size(), topic);
@@ -78,13 +77,12 @@ public class FileUploadController {
             if (processingResult.getProcessedFiles().isEmpty()) {
                 return Flux.just("錯誤：沒有成功處理的文件，無法生成論文。\n");
             }
-            
-            // 2. 構建論文生成請求
+              // 2. 構建論文生成請求
             PaperRequest paperRequest = new PaperRequest();
             paperRequest.setTopic(topic);
             paperRequest.setType(type);
             paperRequest.setField(field);
-            paperRequest.setWordCount(wordCount);
+            paperRequest.setLanguage(language);
             paperRequest.setRequirements(requirements);
             
             // 3. 提取文件內容

@@ -275,34 +275,28 @@
                     <input type="text" id="topic" name="topic" required 
                            placeholder="例如：人工智能在教育領域的應用">
                 </div>
-                
-                <div class="form-group">
+                  <div class="form-group">
                     <label for="type">論文類型</label>
-                    <select id="type" name="type">
-                        <option value="research">研究論文</option>
-                        <option value="review">綜述論文</option>
-                        <option value="survey">調查報告</option>
-                        <option value="case_study">案例研究</option>
-                    </select>
+                    <input type="text" id="type" name="type" 
+                           placeholder="例如：研究論文、文獻綜述、技術報告、案例研究等">
                 </div>
                 
                 <div class="form-group">
                     <label for="field">學術領域</label>
                     <input type="text" id="field" name="field" 
-                           placeholder="例如：計算機科學、教育學、心理學">
+                           placeholder="例如：計算機科學、教育學、心理學、生物醫學等">
+                </div>
+                  <div class="form-group">
+                    <label for="language">輸出語言</label>
+                    <input type="text" id="language" name="language" 
+                           placeholder="例如：繁體中文、English、简体中文、日本語等" value="繁體中文">
                 </div>
                 
                 <div class="form-group">
-                    <label for="wordCount">目標字數</label>
-                    <input type="number" id="wordCount" name="wordCount" 
-                           value="3000" min="1000" max="10000">
-                </div>
-                
-                <div class="form-group">
-                    <label for="requirements">特殊要求</label>
+                    <label for="requirements">特殊需求</label>
                     <textarea id="requirements" name="requirements" 
-                              placeholder="例如：需要包含實驗數據分析、參考文獻格式要求等"></textarea>
-                </div>                <button type="button" class="btn" id="generateBtn">
+                              placeholder="例如：需要3000字以上、包含圖表分析、APA引用格式、包含實驗數據等"></textarea>
+                </div><button type="button" class="btn" id="generateBtn">
                     <span id="btnIcon">🚀</span>
                     <span id="btnText">生成論文</span>
                 </button>
@@ -328,14 +322,12 @@
             // 初始化生成模式顯示
             updateGenerationMode();
             
-            // 設置統一的論文生成按鈕事件（智能檢測模式）
-            document.getElementById('generateBtn').addEventListener('click', async function() {
-                const formData = new FormData(document.getElementById('paperForm'));
-                const request = {
+            // 設置統一的論文生成按鈕事件（智能檢測模式）            document.getElementById('generateBtn').addEventListener('click', async function() {
+                const formData = new FormData(document.getElementById('paperForm'));                const request = {
                     topic: formData.get('topic'),
                     type: formData.get('type'),
                     field: formData.get('field'),
-                    wordCount: parseInt(formData.get('wordCount')),
+                    language: formData.get('language'),
                     requirements: formData.get('requirements')
                 };
 
@@ -460,11 +452,10 @@
                 const generateFormData = new FormData();
                 selectedFiles.forEach(file => {
                     generateFormData.append('files', file);
-                });
-                generateFormData.append('topic', request.topic);
+                });                generateFormData.append('topic', request.topic);
                 generateFormData.append('type', request.type);
                 generateFormData.append('field', request.field);
-                generateFormData.append('wordCount', request.wordCount);
+                generateFormData.append('language', request.language);
                 generateFormData.append('requirements', request.requirements || '');
 
                 await startStreamGenerationWithFiles('/api/files/generate-report', generateFormData, streamDiv);
