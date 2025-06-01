@@ -4,6 +4,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,9 +18,7 @@ public class PlannerAgent {
     public ChatClient plannerAgentChatClient(
             ChatClient.Builder builder, 
             ChatMemory chatMemory, 
-            SimpleLoggerAdvisor loggerAdvisor) {
-        
-        return builder
+            SimpleLoggerAdvisor loggerAdvisor) {        return builder
             .defaultSystem("""
                 你是一位資深的學術論文規劃專家，具有多領域研究經驗。你的職責是：
                 
@@ -41,6 +40,12 @@ public class PlannerAgent {
                 - 標註關鍵研究方法和理論框架
                 - 建議相關文獻檢索關鍵詞
                 """)
+            .defaultOptions(OpenAiChatOptions.builder()
+                .withModel("gpt-4o-mini")
+                .withTemperature(0.5f)
+                .withMaxTokens(8192)
+                .build()
+            )
             .defaultAdvisors(
                 MessageChatMemoryAdvisor.builder(chatMemory).build(),
                 loggerAdvisor
