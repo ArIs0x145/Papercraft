@@ -4,257 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Papercraft - AI 論文生成系統</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-            max-width: 900px;
-            width: 100%;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        input[type="text"], 
-        input[type="number"], 
-        select, 
-        textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px dashed #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-            background: #f8f9fa;
-        }
-
-        input:focus, 
-        select:focus, 
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        input[type="file"]:hover {
-            border-color: #667eea;
-            background: #f0f0f0;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        }
-
-        .file-info {
-            margin-top: 10px;
-            padding: 10px;
-            background: #e7f3ff;
-            border-radius: 6px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .file-list {
-            margin-top: 10px;
-        }
-
-        .file-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        .file-item .file-name {
-            flex: 1;
-            color: #333;
-        }
-
-        .file-item .file-size {
-            color: #666;
-            margin-left: 10px;
-            font-size: 12px;
-        }
-
-        .result-section {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            display: none;
-        }
-
-        .status {
-            text-align: center;
-            margin: 15px 0;
-            font-weight: 600;
-        }
-
-        .error {
-            color: #dc3545;
-            background: #f8d7da;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .success {
-            color: #155724;
-            background: #d4edda;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .stream-content {
-            background: #f8f9fa;
-            border: 1px solid #e1e5e9;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            white-space: pre-wrap;
-            max-height: 500px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .stream-indicator {
-            display: none;
-            text-align: center;
-            margin: 15px 0;
-            color: #28a745;
-            font-weight: 600;
-        }
-
-        .stream-indicator::after {
-            content: '';
-            display: inline-block;
-            animation: dots 1.5s infinite;
-        }
-
-        @keyframes dots {
-            0%, 20% { content: ''; }
-            40% { content: '.'; }
-            60% { content: '..'; }
-            80%, 100% { content: '...'; }
-        }
-
-        .upload-section {
-            background: #e7f3ff;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-
-        .upload-section h3 {
-            color: #0066cc;
-            margin-bottom: 15px;
-        }
-
-        small {
-            display: block;
-            margin-top: 5px;
-            color: #666;
-            font-size: 0.9em;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🎓 Papercraft</h1>
-            <p>基於 Spring AI 的智能論文生成系統</p>
         </div>
         
         <div class="content">
@@ -275,10 +30,11 @@
                     <input type="text" id="topic" name="topic" required 
                            placeholder="例如：人工智能在教育領域的應用">
                 </div>
-                  <div class="form-group">
+                
+                <div class="form-group">
                     <label for="type">論文類型</label>
                     <input type="text" id="type" name="type" 
-                           placeholder="例如：研究論文、文獻綜述、技術報告、案例研究等">
+                           placeholder="例如：研究論文、文獻綜述、技術報告、案例研究等" value="研究論文">
                 </div>
                 
                 <div class="form-group">
@@ -286,7 +42,8 @@
                     <input type="text" id="field" name="field" 
                            placeholder="例如：計算機科學、教育學、心理學、生物醫學等">
                 </div>
-                  <div class="form-group">
+                
+                <div class="form-group">
                     <label for="language">輸出語言</label>
                     <input type="text" id="language" name="language" 
                            placeholder="例如：繁體中文、English、简体中文、日本語等" value="繁體中文">
@@ -296,12 +53,14 @@
                     <label for="requirements">特殊需求</label>
                     <textarea id="requirements" name="requirements" 
                               placeholder="例如：需要3000字以上、包含圖表分析、APA引用格式、包含實驗數據等"></textarea>
-                </div><button type="button" class="btn" id="generateBtn">
+                </div>
+                
+                <button type="button" class="btn" id="generateBtn">
                     <span id="btnIcon">🚀</span>
                     <span id="btnText">生成論文</span>
                 </button>
                 
-                <div class="generation-mode" id="generationMode" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 14px; color: #666; display: none;">
+                <div class="generation-mode" id="generationMode" style="display: none;">
                     <span id="modeText"></span>
                 </div>
             </form>
@@ -315,266 +74,8 @@
                 <div id="streamContent" class="stream-content" style="display: none;"></div>
             </div>
         </div>
-    </div>    <script>
-        let selectedFiles = [];
-          // 頁面初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 初始化生成模式顯示
-            updateGenerationMode();
-            
-            // 設置統一的論文生成按鈕事件（智能檢測模式）            document.getElementById('generateBtn').addEventListener('click', async function() {
-                const formData = new FormData(document.getElementById('paperForm'));                const request = {
-                    topic: formData.get('topic'),
-                    type: formData.get('type'),
-                    field: formData.get('field'),
-                    language: formData.get('language'),
-                    requirements: formData.get('requirements')
-                };
+    </div>
 
-                if (!request.topic) {
-                    showError('請先填寫論文主題');
-                    return;
-                }
-
-                // 智能檢測：有文件則基於文件生成，無文件則流式生成
-                if (selectedFiles.length > 0) {
-                    await generateFromFiles(request);
-                } else {
-                    await generateFromStream(request);
-                }
-            });
-        });
-
-        // 文件選擇事件
-        document.getElementById('fileUpload').addEventListener('change', function(e) {
-            selectedFiles = Array.from(e.target.files);
-            updateFileList();
-            updateGenerationMode(); // 更新生成模式顯示
-        });// 更新生成模式顯示
-        function updateGenerationMode() {
-            const modeDiv = document.getElementById('generationMode');
-            const modeText = document.getElementById('modeText');
-            const btnIcon = document.getElementById('btnIcon');
-            const btnText = document.getElementById('btnText');
-            
-            // 防護措施：確保所有元素都存在
-            if (!modeDiv || !modeText || !btnIcon || !btnText) {
-                console.warn('updateGenerationMode: 某些 DOM 元素未找到');
-                return;
-            }
-            
-            if (selectedFiles.length > 0) {
-                modeDiv.style.display = 'block';
-                modeText.textContent = `📄 將基於 ${selectedFiles.length} 個上傳文件生成論文`;
-                btnIcon.textContent = '📄';
-                btnText.textContent = '基於文件生成論文';
-            } else {
-                modeDiv.style.display = 'block';
-                modeText.textContent = '⚡ 將使用流式生成模式（僅基於您的輸入）';
-                btnIcon.textContent = '⚡';
-                btnText.textContent = '流式生成論文';
-            }
-        }
-
-        // 更新文件列表顯示
-        function updateFileList() {
-            const fileListDiv = document.getElementById('fileList');
-            fileListDiv.innerHTML = '';
-
-            if (selectedFiles.length === 0) {
-                return;
-            }
-
-            selectedFiles.forEach((file, index) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                
-                const fileName = document.createElement('span');
-                fileName.className = 'file-name';
-                fileName.textContent = file.name;
-                
-                const fileSize = document.createElement('span');
-                fileSize.className = 'file-size';
-                fileSize.textContent = formatFileSize(file.size);
-                
-                fileItem.appendChild(fileName);
-                fileItem.appendChild(fileSize);
-                fileListDiv.appendChild(fileItem);
-            });
-        }
-
-        // 格式化文件大小
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];        }
-
-        // 基於文件生成論文
-        async function generateFromFiles(request) {
-            try {
-                const generateBtn = document.getElementById('generateBtn');
-                generateBtn.disabled = true;
-                generateBtn.innerHTML = '<span>📁</span><span>處理文件中...</span>';
-                
-                document.getElementById('resultSection').style.display = 'block';
-                hideMessages();
-                document.getElementById('status').textContent = '📁 正在處理文件...';
-
-                // 步驟1: 上傳並處理文件
-                const fileFormData = new FormData();
-                selectedFiles.forEach(file => {
-                    fileFormData.append('files', file);
-                });
-
-                const uploadResponse = await fetch('/api/files/upload', {
-                    method: 'POST',
-                    body: fileFormData
-                });
-
-                if (!uploadResponse.ok) {
-                    throw new Error('文件上傳失敗: ' + uploadResponse.status);
-                }
-
-                const uploadResult = await uploadResponse.json();
-                showSuccess(`成功處理 ${uploadResult.processedFiles.length} 個文件，生成 ${uploadResult.totalDocuments} 個文檔片段`);
-
-                // 步驟2: 基於文件內容生成論文
-                generateBtn.innerHTML = '<span>🚀</span><span>生成論文中...</span>';
-                document.getElementById('streamContent').style.display = 'block';
-                document.getElementById('streamIndicator').style.display = 'block';
-                document.getElementById('status').textContent = '🚀 基於文件內容生成論文...';
-
-                const streamDiv = document.getElementById('streamContent');
-                streamDiv.textContent = '';
-
-                const generateFormData = new FormData();
-                selectedFiles.forEach(file => {
-                    generateFormData.append('files', file);
-                });                generateFormData.append('topic', request.topic);
-                generateFormData.append('type', request.type);
-                generateFormData.append('field', request.field);
-                generateFormData.append('language', request.language);
-                generateFormData.append('requirements', request.requirements || '');
-
-                await startStreamGenerationWithFiles('/api/files/generate-report', generateFormData, streamDiv);
-
-            } catch (error) {
-                showError('基於文件生成論文時發生錯誤: ' + error.message);
-                resetForm();
-            }
-        }
-
-        // 流式生成論文
-        async function generateFromStream(request) {
-            try {
-                const generateBtn = document.getElementById('generateBtn');
-                generateBtn.disabled = true;
-                generateBtn.innerHTML = '<span>⚡</span><span>流式生成中...</span>';
-                
-                document.getElementById('resultSection').style.display = 'block';
-                hideMessages();
-                document.getElementById('streamContent').style.display = 'block';
-                document.getElementById('streamIndicator').style.display = 'block';
-                document.getElementById('status').textContent = '🚀 開始流式生成...';
-                
-                // 清空之前的內容
-                const streamDiv = document.getElementById('streamContent');
-                streamDiv.textContent = '';
-
-                // 使用流式請求進行接收
-                await startStreamGeneration('/api/papers/generate/stream', request, streamDiv);
-
-            } catch (error) {
-                showError('流式生成論文時發生錯誤: ' + error.message);
-                resetForm();
-            }
-        }
-
-        async function startStreamGeneration(url, request, streamDiv) {
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(request)
-                });
-
-                if (!response.ok) {
-                    throw new Error('流式請求失敗: ' + response.status);
-                }
-
-                await processStreamResponse(response, streamDiv);
-            } catch (error) {
-                throw error;
-            }
-        }
-
-        async function startStreamGenerationWithFiles(url, formData, streamDiv) {
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    throw new Error('流式請求失敗: ' + response.status);
-                }
-
-                await processStreamResponse(response, streamDiv);
-            } catch (error) {
-                throw error;
-            }
-        }
-
-        async function processStreamResponse(response, streamDiv) {
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-
-            while (true) {
-                const { done, value } = await reader.read();
-                
-                if (done) {
-                    document.getElementById('streamIndicator').style.display = 'none';
-                    document.getElementById('status').textContent = '✅ 流式生成完成！';
-                    resetForm();
-                    break;
-                }
-
-                const chunk = decoder.decode(value, { stream: true });
-                streamDiv.textContent += chunk;
-                streamDiv.scrollTop = streamDiv.scrollHeight; // 自動滾動到底部
-            }
-        }
-
-        function showError(message) {
-            hideMessages();
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-
-        function showSuccess(message) {
-            hideMessages();
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-        }
-
-        function hideMessages() {
-            document.getElementById('errorMessage').style.display = 'none';
-            document.getElementById('successMessage').style.display = 'none';
-        }        function resetForm() {
-            const generateBtn = document.getElementById('generateBtn');
-            if (generateBtn) {
-                generateBtn.disabled = false;
-            }
-            
-            // 根據當前模式重置按鈕內容
-            updateGenerationMode();
-        }
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
