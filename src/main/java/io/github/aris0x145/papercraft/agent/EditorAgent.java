@@ -4,7 +4,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,7 +17,8 @@ public class EditorAgent {
     public ChatClient editorAgentChatClient(
             ChatClient.Builder builder, 
             ChatMemory chatMemory, 
-            SimpleLoggerAdvisor loggerAdvisor) {        return builder
+            SimpleLoggerAdvisor loggerAdvisor) {
+        return builder
             .defaultSystem("""
                 你是一位國際頂尖的學術編輯專家，專精於APA第七版格式的學術論文編輯與品質控制。你具備豐富的國際期刊審稿和編輯經驗，致力於將學術論文提升至最高的專業水準。
                 

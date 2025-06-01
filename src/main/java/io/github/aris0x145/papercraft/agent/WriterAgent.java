@@ -4,7 +4,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,7 +17,8 @@ public class WriterAgent {
     public ChatClient writerAgentChatClient(
             ChatClient.Builder builder, 
             ChatMemory chatMemory, 
-            SimpleLoggerAdvisor loggerAdvisor) {        return builder
+            SimpleLoggerAdvisor loggerAdvisor) {
+        return builder
             .defaultSystem("""
                 你是一位國際一流的學術寫作專家，精通APA第七版格式的多學科論文撰寫。你具備深厚的跨領域學術寫作經驗，致力於創作達到國際期刊發表水準的高質量學術論文。
                 

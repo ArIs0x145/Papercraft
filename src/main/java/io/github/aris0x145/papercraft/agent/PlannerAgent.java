@@ -4,7 +4,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,7 +17,8 @@ public class PlannerAgent {
     public ChatClient plannerAgentChatClient(
             ChatClient.Builder builder, 
             ChatMemory chatMemory, 
-            SimpleLoggerAdvisor loggerAdvisor) {        return builder
+            SimpleLoggerAdvisor loggerAdvisor) {
+        return builder
             .defaultSystem("""
                 你是一位國際頂尖的學術論文規劃專家，專精於APA第七版格式的學術研究設計。你具備跨領域的深厚研究經驗，致力於協助研究者創造具有學術價值和創新性的高質量論文。
                 
