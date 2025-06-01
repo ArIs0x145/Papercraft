@@ -26,7 +26,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
         }
 
@@ -74,11 +74,26 @@
             transition: border-color 0.3s;
         }
 
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: #f8f9fa;
+        }
+
         input:focus, 
         select:focus, 
         textarea:focus {
             outline: none;
             border-color: #667eea;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+            background: #f0f0f0;
         }
 
         textarea {
@@ -97,6 +112,7 @@
             cursor: pointer;
             transition: transform 0.2s;
             width: 100%;
+            margin-bottom: 10px;
         }
 
         .btn:hover {
@@ -107,7 +123,49 @@
             background: #ccc;
             cursor: not-allowed;
             transform: none;
-        }        .result-section {
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e7f3ff;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .file-list {
+            margin-top: 10px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .file-item .file-name {
+            flex: 1;
+            color: #333;
+        }
+
+        .file-item .file-size {
+            color: #666;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+
+        .result-section {
             margin-top: 30px;
             padding: 20px;
             background: #f8f9fa;
@@ -127,18 +185,14 @@
             padding: 15px;
             border-radius: 8px;
             margin: 15px 0;
-        }.paper-content {
-            background: white;
-            border: 1px solid #e1e5e9;
+        }
+
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 15px;
             border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            white-space: pre-wrap;
-            max-height: 400px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
+            margin: 15px 0;
         }
 
         .stream-content {
@@ -175,6 +229,25 @@
             60% { content: '..'; }
             80%, 100% { content: '...'; }
         }
+
+        .upload-section {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .upload-section h3 {
+            color: #0066cc;
+            margin-bottom: 15px;
+        }
+
+        small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -185,6 +258,17 @@
         </div>
         
         <div class="content">
+            <!-- 文件上傳區域 -->
+            <div class="upload-section">
+                <h3>📎 上傳參考文件（可選）</h3>
+                <div class="form-group">
+                    <input type="file" id="fileUpload" name="files" multiple 
+                           accept=".pdf,.docx,.doc,.txt,.json,.md,.markdown">
+                    <small>支持的格式：PDF、DOCX、DOC、TXT、JSON、Markdown。上傳的文件內容將作為論文生成的參考材料。</small>
+                    <div id="fileList" class="file-list"></div>
+                </div>
+            </div>
+
             <form id="paperForm">
                 <div class="form-group">
                     <label for="topic">論文主題 *</label>
@@ -218,8 +302,14 @@
                     <label for="requirements">特殊要求</label>
                     <textarea id="requirements" name="requirements" 
                               placeholder="例如：需要包含實驗數據分析、參考文獻格式要求等"></textarea>
-                </div>                <button type="button" class="btn" id="streamBtn">
+                </div>
+
+                <button type="button" class="btn" id="streamBtn">
                     ⚡ 流式生成論文
+                </button>
+
+                <button type="button" class="btn btn-success" id="fileGenerateBtn">
+                    📄 基於文件生成論文
                 </button>
             </form>
 
@@ -228,11 +318,58 @@
                 <div class="stream-indicator" id="streamIndicator">🔄 正在流式生成</div>
                 <div class="status" id="status">準備中...</div>
                 <div id="errorMessage" class="error" style="display: none;"></div>
+                <div id="successMessage" class="success" style="display: none;"></div>
                 <div id="streamContent" class="stream-content" style="display: none;"></div>
             </div>
         </div>
-    </div>    <script>
-        // 流式生成按鈕事件
+    </div>
+
+    <script>
+        let selectedFiles = [];
+
+        // 文件選擇事件
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            selectedFiles = Array.from(e.target.files);
+            updateFileList();
+        });
+
+        // 更新文件列表顯示
+        function updateFileList() {
+            const fileListDiv = document.getElementById('fileList');
+            fileListDiv.innerHTML = '';
+
+            if (selectedFiles.length === 0) {
+                return;
+            }
+
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const fileName = document.createElement('span');
+                fileName.className = 'file-name';
+                fileName.textContent = file.name;
+                
+                const fileSize = document.createElement('span');
+                fileSize.className = 'file-size';
+                fileSize.textContent = formatFileSize(file.size);
+                
+                fileItem.appendChild(fileName);
+                fileItem.appendChild(fileSize);
+                fileListDiv.appendChild(fileItem);
+            });
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 普通流式生成按鈕事件
         document.getElementById('streamBtn').addEventListener('click', async function() {
             const formData = new FormData(document.getElementById('paperForm'));
             const request = {
@@ -250,9 +387,10 @@
 
             try {
                 document.getElementById('streamBtn').disabled = true;
+                document.getElementById('fileGenerateBtn').disabled = true;
                 document.getElementById('streamBtn').textContent = '流式生成中...';
                 document.getElementById('resultSection').style.display = 'block';
-                document.getElementById('errorMessage').style.display = 'none';
+                hideMessages();
                 document.getElementById('streamContent').style.display = 'block';
                 document.getElementById('streamIndicator').style.display = 'block';
                 document.getElementById('status').textContent = '🚀 開始流式生成...';
@@ -262,7 +400,7 @@
                 streamDiv.textContent = '';
 
                 // 使用流式請求進行接收
-                await startStreamGeneration(request, streamDiv);
+                await startStreamGeneration('/api/papers/generate/stream', request, streamDiv);
 
             } catch (error) {
                 showError('流式生成論文時發生錯誤: ' + error.message);
@@ -270,9 +408,83 @@
             }
         });
 
-        async function startStreamGeneration(request, streamDiv) {
+        // 基於文件生成按鈕事件
+        document.getElementById('fileGenerateBtn').addEventListener('click', async function() {
+            const formData = new FormData(document.getElementById('paperForm'));
+            const request = {
+                topic: formData.get('topic'),
+                type: formData.get('type'),
+                field: formData.get('field'),
+                wordCount: parseInt(formData.get('wordCount')),
+                requirements: formData.get('requirements')
+            };
+
+            if (!request.topic) {
+                showError('請先填寫論文主題');
+                return;
+            }
+
+            if (selectedFiles.length === 0) {
+                showError('請先上傳至少一個參考文件');
+                return;
+            }
+
             try {
-                const response = await fetch('/api/papers/generate/stream', {
+                document.getElementById('streamBtn').disabled = true;
+                document.getElementById('fileGenerateBtn').disabled = true;
+                document.getElementById('fileGenerateBtn').textContent = '處理文件中...';
+                document.getElementById('resultSection').style.display = 'block';
+                hideMessages();
+                document.getElementById('status').textContent = '📁 正在處理文件...';
+
+                // 步驟1: 上傳並處理文件
+                const fileFormData = new FormData();
+                selectedFiles.forEach(file => {
+                    fileFormData.append('files', file);
+                });
+
+                const uploadResponse = await fetch('/api/files/upload', {
+                    method: 'POST',
+                    body: fileFormData
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('文件上傳失敗: ' + uploadResponse.status);
+                }
+
+                const uploadResult = await uploadResponse.json();
+                showSuccess(`成功處理 ${uploadResult.processedFiles.length} 個文件，生成 ${uploadResult.totalDocuments} 個文檔片段`);
+
+                // 步驟2: 基於文件內容生成論文
+                document.getElementById('fileGenerateBtn').textContent = '生成論文中...';
+                document.getElementById('streamContent').style.display = 'block';
+                document.getElementById('streamIndicator').style.display = 'block';
+                document.getElementById('status').textContent = '🚀 基於文件內容生成論文...';
+
+                const streamDiv = document.getElementById('streamContent');
+                streamDiv.textContent = '';
+
+                const generateFormData = new FormData();
+                selectedFiles.forEach(file => {
+                    generateFormData.append('files', file);
+                });
+                generateFormData.append('topic', request.topic);
+                generateFormData.append('type', request.type);
+                generateFormData.append('field', request.field);
+                generateFormData.append('wordCount', request.wordCount);
+                generateFormData.append('requirements', request.requirements || '');
+
+                await startStreamGenerationWithFiles('/api/files/generate-report', generateFormData, streamDiv);
+
+            } catch (error) {
+                showError('基於文件生成論文時發生錯誤: ' + error.message);
+                resetForm();
+            }
+        });
+
+        async function startStreamGeneration(url, request, streamDiv) {
+            try {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -284,37 +496,73 @@
                     throw new Error('流式請求失敗: ' + response.status);
                 }
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    
-                    if (done) {
-                        document.getElementById('streamIndicator').style.display = 'none';
-                        document.getElementById('status').textContent = '✅ 流式生成完成！';
-                        resetForm();
-                        break;
-                    }
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    streamDiv.textContent += chunk;
-                    streamDiv.scrollTop = streamDiv.scrollHeight; // 自動滾動到底部
-                }
+                await processStreamResponse(response, streamDiv);
             } catch (error) {
                 throw error;
             }
         }
 
+        async function startStreamGenerationWithFiles(url, formData, streamDiv) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('流式請求失敗: ' + response.status);
+                }
+
+                await processStreamResponse(response, streamDiv);
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        async function processStreamResponse(response, streamDiv) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                
+                if (done) {
+                    document.getElementById('streamIndicator').style.display = 'none';
+                    document.getElementById('status').textContent = '✅ 流式生成完成！';
+                    resetForm();
+                    break;
+                }
+
+                const chunk = decoder.decode(value, { stream: true });
+                streamDiv.textContent += chunk;
+                streamDiv.scrollTop = streamDiv.scrollHeight; // 自動滾動到底部
+            }
+        }
+
         function showError(message) {
+            hideMessages();
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
         }
 
+        function showSuccess(message) {
+            hideMessages();
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
         function resetForm() {
             document.getElementById('streamBtn').disabled = false;
+            document.getElementById('fileGenerateBtn').disabled = false;
             document.getElementById('streamBtn').textContent = '⚡ 流式生成論文';
+            document.getElementById('fileGenerateBtn').textContent = '📄 基於文件生成論文';
         }
     </script>
 </body>

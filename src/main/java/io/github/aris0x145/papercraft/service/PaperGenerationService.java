@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -32,25 +33,34 @@ public class PaperGenerationService {
         this.plannerAgent = plannerAgent;
         this.writerAgent = writerAgent;
         this.editorAgent = editorAgent;
-    }
-
-    /**
+    }    /**
      * 流式生成論文（即時流式響應）
      * 使用 CONVERSATION_ID 參數實現多 Agent 間的記憶體共享
      */
     public Flux<String> generatePaperStream(PaperRequest request) {
+        return generatePaperStream(request, null);
+    }
+
+    /**
+     * 流式生成論文（支援文件內容輸入）
+     * 使用 CONVERSATION_ID 參數實現多 Agent 間的記憶體共享
+     * 
+     * @param request 論文生成請求
+     * @param fileContents 上傳文件的內容列表（可選）
+     */
+    public Flux<String> generatePaperStream(PaperRequest request, List<String> fileContents) {
         String conversationId = "paper-" + UUID.randomUUID().toString();
         log.info("Starting paper generation with conversationId: {}", conversationId);
         
         return Flux.concat(
             // 步驟1: 生成大綱
             Flux.just("=== 開始生成論文大綱 ===\n\n")
-                .concatWith(generateOutlineStream(request, conversationId))
+                .concatWith(generateOutlineStream(request, fileContents, conversationId))
                 .concatWith(Flux.just("\n\n=== 大綱生成完成 ===\n\n")),
             
-            // 步驟2: 撰寫內容  
+            // 步驟2: 撰寫內容
             Flux.just("=== 開始撰寫論文內容 ===\n\n")
-                .concatWith(writeContentStream(request, conversationId))
+                .concatWith(writeContentStream(request, fileContents, conversationId))
                 .concatWith(Flux.just("\n\n=== 內容撰寫完成 ===\n\n")),
             
             // 步驟3: 編輯潤色
@@ -61,14 +71,21 @@ public class PaperGenerationService {
         .doOnTerminate(() -> {
             log.info("Paper generation completed for conversationId: {}", conversationId);
         });
-    }
-
-    /**
+    }    /**
      * 流式生成大綱
      * 使用 CONVERSATION_ID 參數控制記憶體
      */
     private Flux<String> generateOutlineStream(PaperRequest request, String conversationId) {
-        String prompt = String.format("""
+        return generateOutlineStream(request, null, conversationId);
+    }
+
+    /**
+     * 流式生成大綱（支援文件內容）
+     * 使用 CONVERSATION_ID 參數控制記憶體
+     */
+    private Flux<String> generateOutlineStream(PaperRequest request, List<String> fileContents, String conversationId) {
+        StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append(String.format("""
             請為以下論文需求生成詳細大綱：
             
             主題: %s
@@ -76,49 +93,73 @@ public class PaperGenerationService {
             領域: %s
             目標字數: %d
             特殊要求: %s
-            
-            請生成包含標題、摘要、關鍵詞和詳細章節結構的大綱。
             """, 
             request.getTopic(),
             request.getType(),
             request.getField(),
             request.getWordCount(),
             request.getRequirements() != null ? request.getRequirements() : "無"
-        );
+        ));
+
+        // 如果有文件內容，加入到提示中
+        if (fileContents != null && !fileContents.isEmpty()) {
+            promptBuilder.append("\n\n=== 參考文件內容 ===\n");
+            for (int i = 0; i < fileContents.size(); i++) {
+                promptBuilder.append(String.format("--- 文件 %d ---\n%s\n\n", i + 1, fileContents.get(i)));
+            }
+            promptBuilder.append("請基於上述文件內容，生成更具體和準確的論文大綱。");
+        }
+        
+        promptBuilder.append("\n\n請生成包含標題、摘要、關鍵詞和詳細章節結構的大綱。");
         
         return plannerAgent
             .prompt()
-            .user(prompt)
+            .user(promptBuilder.toString())
             .advisors(advisorSpec -> advisorSpec.param("CONVERSATION_ID", conversationId))
             .stream()
             .content();
-    }
-
-    /**
+    }    /**
      * 流式撰寫內容
      * 使用相同的 CONVERSATION_ID，Writer 可以看到 Planner 的工作結果
      */
     private Flux<String> writeContentStream(PaperRequest request, String conversationId) {
-        String prompt = String.format("""
+        return writeContentStream(request, null, conversationId);
+    }
+
+    /**
+     * 流式撰寫內容（支援文件內容）
+     * 使用相同的 CONVERSATION_ID，Writer 可以看到 Planner 的工作結果
+     */
+    private Flux<String> writeContentStream(PaperRequest request, List<String> fileContents, String conversationId) {
+        StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append(String.format("""
             請為論文主題"%s"撰寫詳細的學術內容。
             
             論文類型: %s
             研究領域: %s
             目標字數: %d
             特殊要求: %s
-            
-            請根據前面 Planner 生成的大綱，撰寫包含引言、方法、結果、討論和結論的完整內容。
             """, 
             request.getTopic(),
             request.getType(),
             request.getField(),
             request.getWordCount(),
             request.getRequirements() != null ? request.getRequirements() : "無"
-        );
+        ));
+
+        // 如果有文件內容，提醒使用這些內容
+        if (fileContents != null && !fileContents.isEmpty()) {
+            promptBuilder.append("\n\n=== 重要提示 ===\n");
+            promptBuilder.append("用戶已上傳了相關文件內容，這些內容在 Planner 階段已經被納入考慮。");
+            promptBuilder.append("請確保在撰寫時充分利用這些信息來豐富論文內容，");
+            promptBuilder.append("包括引用相關數據、案例、理論或研究發現。");
+        }
+
+        promptBuilder.append("\n\n請根據前面 Planner 生成的大綱，撰寫包含引言、方法、結果、討論和結論的完整內容。");
         
         return writerAgent
             .prompt()
-            .user(prompt)
+            .user(promptBuilder.toString())
             .advisors(advisorSpec -> advisorSpec.param("CONVERSATION_ID", conversationId))
             .stream()
             .content();
