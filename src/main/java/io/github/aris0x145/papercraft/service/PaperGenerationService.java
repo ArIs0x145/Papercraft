@@ -35,13 +35,13 @@ public class PaperGenerationService {
 
     /**
      * 流式生成論文
-     * 使用 CONVERSATION_ID 參數實現多 Agent 間的記憶體共享
      */
     public Flux<String> generatePaperStream(PaperRequest request) {
         return generatePaperStream(request, null);
-    }    /**
-     * 流式生成論文（支援文件內容輸入）
-     * 使用 CONVERSATION_ID 參數實現多 Agent 間的記憶體共享
+    }
+
+    /**
+     * 流式生成論文
      * 
      * @param request 論文生成請求
      * @param fileContents 上傳文件的內容列表（可選）
@@ -65,8 +65,10 @@ public class PaperGenerationService {
         )
         .doOnError(error -> log.error("Error during paper generation for conversationId: {}", conversationId, error))
         .doOnTerminate(() -> log.info("Paper generation completed for conversationId: {}", conversationId));
-    }    /**
-     * 流式生成大綱（支援文件內容）- 基於APA第七版格式標準
+    }
+
+    /**
+     * 流式生成大綱
      */
     private Flux<String> generateOutlineStream(PaperRequest request, List<String> fileContents, String conversationId) {
         StringBuilder promptBuilder = new StringBuilder();

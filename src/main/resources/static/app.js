@@ -141,7 +141,7 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// 統一的論文生成函數
+// 論文生成函數
 async function generatePaper(request, files = null) {
     console.log('開始生成論文...', { request, filesCount: files?.length || 0 });
     

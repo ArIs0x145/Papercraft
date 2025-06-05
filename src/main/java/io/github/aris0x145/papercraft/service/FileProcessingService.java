@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 /**
  * 文件處理服務
- * 使用 Spring AI ETL Pipeline 處理上傳的文件
  */
 @Slf4j
 @Service
@@ -34,13 +33,12 @@ public class FileProcessingService {
     private final TokenTextSplitter textSplitter;
 
     public FileProcessingService() {
-        // 配置文本分割器
         this.textSplitter = new TokenTextSplitter(
-            2000,  // defaultChunkSize - 保留足夠空間給 Agent 指令
-            400,   // minChunkSizeChars
-            10,    // minChunkLengthToEmbed
-            50,    // maxNumChunks - 限制最大分塊數
-            true   // keepSeparator
+            2000,
+            400,
+            10,
+            50,
+            true
         );
     }
 
@@ -64,12 +62,15 @@ public class FileProcessingService {
                 
                 if (!documents.isEmpty()) {
                     allDocuments.addAll(documents);
-                      // 記錄成功處理的文件
+
+                    // 記錄成功處理的文件
                     FileProcessingResult.ProcessedFile processedFile = new FileProcessingResult.ProcessedFile();
                     processedFile.setFileName(file.getOriginalFilename());
                     processedFile.setFileType(getFileType(file.getOriginalFilename()));
                     processedFile.setFileSize(file.getSize());
-                    processedFile.setDocumentCount(documents.size());                    // 合併文檔內容
+                    processedFile.setDocumentCount(documents.size());
+
+                    // 合併文檔內容
                     String fileContent = documents.stream()
                         .map(Document::getText)
                         .collect(Collectors.joining("\n"));
@@ -78,7 +79,8 @@ public class FileProcessingService {
                     processedFile.setMetadata(extractFileMetadata(documents));
                     
                     result.getProcessedFiles().add(processedFile);
-                      // 添加到組合內容
+
+                    // 添加到組合內容
                     combinedContent.append("\n\n=== 文件: ").append(file.getOriginalFilename()).append(" ===\n");
                     for (Document doc : documents) {
                         combinedContent.append(doc.getText()).append("\n");
@@ -122,7 +124,9 @@ public class FileProcessingService {
             result.getTotalDocuments());
         
         return result;
-    }    /**
+    }
+
+    /**
      * 處理單個文件
      */
     private List<Document> processFile(MultipartFile file) throws IOException {
@@ -130,8 +134,7 @@ public class FileProcessingService {
         String fileType = getFileType(fileName);
         
         log.info("開始處理文件: {}, 類型: {}, 大小: {} bytes", fileName, fileType, file.getSize());
-        
-        // 創建 ByteArrayResource
+
         ByteArrayResource resource = new ByteArrayResource(file.getBytes()) {
             @Override
             public String getFilename() {
@@ -145,7 +148,8 @@ public class FileProcessingService {
         // 讀取文檔
         List<Document> documents = documentReader.read();
         log.info("DocumentReader 讀取到 {} 個原始文檔", documents.size());
-          // 檢查原始文檔內容
+
+        // 檢查原始文檔內容
         for (int i = 0; i < documents.size(); i++) {
             Document doc = documents.get(i);
             String content = doc.getText();
@@ -159,7 +163,8 @@ public class FileProcessingService {
         if (!documents.isEmpty()) {
             List<Document> splitDocuments = textSplitter.apply(documents);
             log.info("TokenTextSplitter 分割後得到 {} 個文檔片段", splitDocuments.size());
-              // 檢查分割後的文檔內容
+
+            // 檢查分割後的文檔內容
             for (int i = 0; i < Math.min(3, splitDocuments.size()); i++) {
                 Document doc = splitDocuments.get(i);
                 String content = doc.getText();
@@ -172,22 +177,20 @@ public class FileProcessingService {
         }
         
         return documents;
-    }    /**
+    }
+
+    /**
      * 根據文件類型創建對應的 DocumentReader
      */
     private DocumentReader createDocumentReader(String fileType, ByteArrayResource resource) {
         return switch (fileType.toLowerCase()) {
-            case "pdf" -> {
-                // 使用 PagePdfDocumentReader 處理 PDF 文件（簡化配置）
-                log.info("使用 PagePdfDocumentReader 處理 PDF 文件");
-                yield new PagePdfDocumentReader(resource);
-            }
+            case "pdf" -> new PagePdfDocumentReader(resource);
             case "docx", "doc", "pptx", "ppt" -> new TikaDocumentReader(resource);
             case "txt" -> new TextReader(resource);
             case "json" -> new JsonReader(resource);
             case "md", "markdown" -> new MarkdownDocumentReader(resource, 
                 MarkdownDocumentReaderConfig.builder().build());
-            default -> new TextReader(resource); // 默認使用文本讀取器
+            default -> new TextReader(resource);
         };
     }
 
@@ -216,7 +219,9 @@ public class FileProcessingService {
         metadata.put("processed_at", LocalDateTime.now().toString());
         
         return metadata;
-    }    /**
+    }
+
+    /**
      * 生成內容摘要
      */
     private String generateContentSummary(List<Document> documents) {

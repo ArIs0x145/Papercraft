@@ -106,6 +106,10 @@
                         <version>1.18.38</version>
                     </path>
                 </annotationProcessorPaths>
+                <basedir/>
+                <buildDirectory/>
+                <outputDirectory/>
+                <projectArtifact/>
             </configuration>
         </plugin>
         <plugin>
